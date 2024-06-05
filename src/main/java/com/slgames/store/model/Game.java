@@ -4,6 +4,7 @@ import java.time.LocalDate;
 import java.util.HashSet;
 import java.util.Set;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import com.slgames.store.dtos.game.InsertGameDTO;
 import com.slgames.store.dtos.game.UpdateGameDTO;
@@ -68,11 +69,12 @@ public class Game implements Cloneable {
 		setGenres(new HashSet<Genre>(dto.genres().stream().map(genre -> new Genre(genre)).toList()));
 	}
 	
-	
+	@JsonIgnore
 	public Long getDeveloperId() {
 		return getDeveloper().getId();
 	}
 	
+	@JsonIgnore
 	public Long getPublisherId() {
 		return getPublisher().getId();
 	}
