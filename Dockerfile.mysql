@@ -1,7 +1,0 @@
-FROM mysql:latest
-
-ENV MYSQL_ROOT_PASSWORD=root
-ENV MYSQL_DATABASE=slgames
-ENV MYSQL_PASSWORD=root
-
-COPY /migration/*.sql /docker-entrypoint-initdb.d/
