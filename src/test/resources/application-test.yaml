@@ -1,7 +1,7 @@
 
 spring:
   datasource:
-    url: jdbc:mysql://localhost:3308/sltest
+    url: jdbc:mysql://localhost:3306/sltest
     username: root
     password: root
   flyway:

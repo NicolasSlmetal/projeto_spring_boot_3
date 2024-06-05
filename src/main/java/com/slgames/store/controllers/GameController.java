@@ -2,6 +2,8 @@ package com.slgames.store.controllers;
 
 
 
+import java.util.List;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -14,6 +16,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.util.UriComponentsBuilder;
 
+
+import com.slgames.store.dtos.game.CreatedResponseGameDTO;
 import com.slgames.store.dtos.game.DefaultResponseGameDTO;
 import com.slgames.store.dtos.game.GameDTOFactory;
 import com.slgames.store.dtos.game.InsertGameDTO;
@@ -44,7 +48,7 @@ public class GameController {
 	})
 	
 	@GetMapping
-	public ResponseEntity<?> findAllGames(){
+	public ResponseEntity<List<DefaultResponseGameDTO>> findAllGames(){
 		return ResponseEntity.ok(getService().findAll());
 	}
 	@Operation(summary = "Return a specific game based on your ID. If not exists, will return HTTP status 404.")
@@ -70,10 +74,14 @@ public class GameController {
 					+ "\n - Some Genre is wrong;"
 					+ "\n - The date is in the future.")
 	})
-	public ResponseEntity<?> insertGame(@RequestBody @Valid InsertGameDTO gameDto, UriComponentsBuilder builder){
+	public ResponseEntity<CreatedResponseGameDTO> insertGame(@RequestBody @Valid InsertGameDTO gameDto, UriComponentsBuilder builder){
 			Game game = getService().createGame(gameDto);
 			var uri = builder.path("/game/{id}").buildAndExpand(game.getId()).toUri();
-			return ResponseEntity.created(uri).body(GameDTOFactory.getInstance().fabricateCreated(game));
+			return ResponseEntity.created(uri)
+					.body((CreatedResponseGameDTO)
+					GameDTOFactory
+					.getInstance()
+					.fabricateCreated(game));
 	}
 	@PutMapping
 	@Transactional
@@ -83,7 +91,7 @@ public class GameController {
 			@ApiResponse(responseCode="400", description="Could occur when Id is not provided."),
 			@ApiResponse(responseCode="404", description="The ID was not found in the database.")
 	})
-	public ResponseEntity<?> updateGame(@RequestBody @Valid UpdateGameDTO gameDto){
+	public ResponseEntity<DefaultResponseGameDTO> updateGame(@RequestBody @Valid UpdateGameDTO gameDto){
 		Game game = getService().update(gameDto);
 		if (game != null) {
 			return ResponseEntity.ok().body(new DefaultResponseGameDTO(game));

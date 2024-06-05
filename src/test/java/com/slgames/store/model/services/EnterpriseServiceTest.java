@@ -7,6 +7,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.context.annotation.Import;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.test.context.ActiveProfiles;
 
@@ -15,6 +16,7 @@ import com.slgames.store.dtos.enterprise.DefaultResponseEnterpriseDTO;
 import com.slgames.store.dtos.enterprise.EnterpriseDTOFactory;
 import com.slgames.store.dtos.enterprise.InsertEnterpriseDTO;
 import com.slgames.store.dtos.enterprise.UpdateEnterpriseDTO;
+import com.slgames.store.infra.WebMvcConfiguration;
 import com.slgames.store.model.Enterprise;
 import com.slgames.store.model.repository.EnterpriseRepository;
 
@@ -94,7 +96,7 @@ public class EnterpriseServiceTest {
 	@DisplayName("Should return DefaultResponseEnterpriseDTO List")
 	public void testFindAll() {
 		Enterprise enterprise = new Enterprise(1L, "Sample", LocalDate.of(2000, 1, 1));
-		DefaultResponseEnterpriseDTO dto = (DefaultResponseEnterpriseDTO) EnterpriseDTOFactory.getDTO(enterprise, TypeDTO.DEFAULT);
+		DefaultResponseEnterpriseDTO dto = (DefaultResponseEnterpriseDTO) EnterpriseDTOFactory.createDTO(enterprise, TypeDTO.DEFAULT);
 		when(repository.findAll()).thenReturn(List.of(enterprise));
 		
 		Assertions.assertEquals(List.of(dto), service.findAll());

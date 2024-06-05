@@ -39,6 +39,10 @@ public class GameService {
 		return getRepository().existsByTitle(title);
 	}
 	
+	public boolean existsById(Long id) {
+		return getRepository().existsById(id);
+	}
+	
 	public boolean existsEnterprise(Long id) {
 		return getEnterpriseService().existsById(id);
 	}

@@ -11,7 +11,7 @@ public class EnterpriseDTOFactory implements AbstractDTOFactory<Enterprise> {
 	
 	public static EnterpriseDTOFactory INSTANCE;
 	
-	public static DTO getDTO(Enterprise enterprise, TypeDTO type) {
+	public static DTO createDTO(Enterprise enterprise, TypeDTO type) {
 		switch (type) {
 			case TypeDTO.CREATED:
 				return getInstance().fabricateCreated(enterprise);

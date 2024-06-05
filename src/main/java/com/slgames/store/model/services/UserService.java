@@ -6,8 +6,11 @@ import java.util.Optional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import com.slgames.store.dtos.TypeDTO;
+import com.slgames.store.dtos.users.DefaultResponseUserDTO;
 import com.slgames.store.dtos.users.InsertUserDTO;
 import com.slgames.store.dtos.users.UpdateUserDTO;
+import com.slgames.store.dtos.users.UserDTOFactory;
 import com.slgames.store.model.User;
 import com.slgames.store.model.repository.UserRepository;
 
@@ -20,13 +23,20 @@ public class UserService {
 	@Autowired
 	private UserRepository repository;
 	
-	public List<User> findAll(){
-		return getRepository().findAll();
+	
+	public List<DefaultResponseUserDTO> findAll(){
+		return getRepository().findAll().stream()
+				.map(user -> (DefaultResponseUserDTO) 
+						UserDTOFactory
+						.createDTO(user, TypeDTO.DEFAULT))
+				.toList();
 	}
 	
 	public Optional<User> findById(Long id){
 		return getRepository().findById(id);
 	}
+	
+	
 	
 	public User createUser(InsertUserDTO dto) {
 		User user = new User(dto);

@@ -1,5 +1,7 @@
 package com.slgames.store.controllers;
 
+import java.util.List;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -13,6 +15,8 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import com.slgames.store.dtos.TypeDTO;
+import com.slgames.store.dtos.enterprise.CreatedResponseEnterpriseDTO;
+import com.slgames.store.dtos.enterprise.DefaultResponseEnterpriseDTO;
 import com.slgames.store.dtos.enterprise.EnterpriseDTOFactory;
 import com.slgames.store.dtos.enterprise.InsertEnterpriseDTO;
 import com.slgames.store.dtos.enterprise.UpdateEnterpriseDTO;
@@ -42,7 +46,7 @@ public class EnterpriseController {
 	@ApiResponses(value = {
 			@ApiResponse(responseCode = "200", description = "Show all enterprises data stored.")
 	})
-	public ResponseEntity<?> findAll(){
+	public ResponseEntity<List<DefaultResponseEnterpriseDTO>> findAll(){
 		return ResponseEntity.ok(getService().findAll());
 	}
 	@GetMapping("/{id}")
@@ -51,7 +55,7 @@ public class EnterpriseController {
 			@ApiResponse(responseCode = "200", description = "Show the enterprise data."),
 			@ApiResponse(responseCode = "404", description = "Not found.")
 	})
-	public ResponseEntity<?> findEnterpriseById(@PathVariable Long id){
+	public ResponseEntity<Enterprise> findEnterpriseById(@PathVariable Long id){
 		return ResponseEntity.of(getService().findById(id));
 	}
 	
@@ -62,10 +66,12 @@ public class EnterpriseController {
 			@ApiResponse(responseCode = "201", description= "The enterprise data provided is created." ),
 			@ApiResponse(responseCode = "400", description= "The enterprise data is not allowed, because some enterprise with the same name exists.")
 	})
-	public ResponseEntity<?> insertEnterprise(@RequestBody @Valid InsertEnterpriseDTO enterpriseDto, UriComponentsBuilder builder ){
+	public ResponseEntity<CreatedResponseEnterpriseDTO> insertEnterprise(@RequestBody @Valid InsertEnterpriseDTO enterpriseDto, UriComponentsBuilder builder ){
 		Enterprise enterprise = getService().createEnterprise(enterpriseDto);
 		var uri = builder.path("/enterprise/{id}").buildAndExpand(enterprise.getId()).toUri();
-		return ResponseEntity.created(uri).body(EnterpriseDTOFactory.getDTO(enterprise, TypeDTO.CREATED));
+		return ResponseEntity.created(uri).body(
+				(CreatedResponseEnterpriseDTO) EnterpriseDTOFactory
+				.createDTO(enterprise, TypeDTO.CREATED));
 	}
 	
 	@PutMapping
@@ -77,10 +83,13 @@ public class EnterpriseController {
 			@ApiResponse(responseCode="404", description="The ID was not found in the database."),
 			@ApiResponse(responseCode = "500", description = "Could occur when the consumer tries to update a name of a enterprise with a existing name in database.")
 	})
-	public ResponseEntity<?> updateEnterprise(@RequestBody @Valid UpdateEnterpriseDTO enterpriseDto){
+	public ResponseEntity<DefaultResponseEnterpriseDTO> updateEnterprise(@RequestBody @Valid UpdateEnterpriseDTO enterpriseDto){
 		Enterprise enterprise = getService().update(enterpriseDto);
 		if (enterprise != null) {
-			return ResponseEntity.ok(EnterpriseDTOFactory.getDTO(enterprise, TypeDTO.DEFAULT));
+			return ResponseEntity.ok(
+					(DefaultResponseEnterpriseDTO) 
+					EnterpriseDTOFactory
+					.createDTO(enterprise, TypeDTO.DEFAULT));
 		} else {
 			return ResponseEntity.notFound().build();
 		}
@@ -95,11 +104,9 @@ public class EnterpriseController {
 			@ApiResponse(responseCode = "500", description = "The enterprise can't be deleted. There are some Game(s) referencing the enterprise.")
 	})
 	public ResponseEntity<?> deleteEnterprise(@PathVariable Long id) {
-		if (getService().delete(id)) {
-			return ResponseEntity.noContent().build();
-		} else {
-			return ResponseEntity.notFound().build();
-		}
+		if (getService().delete(id)) return ResponseEntity.noContent().build();
+		else return ResponseEntity.notFound().build();
+		
 	}
 	
 	

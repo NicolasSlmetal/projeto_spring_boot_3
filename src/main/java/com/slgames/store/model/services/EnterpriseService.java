@@ -33,7 +33,7 @@ public class EnterpriseService {
 	
 	public List<DefaultResponseEnterpriseDTO> findAll(){
 		return getRepository().findAll().stream().map( enterprise -> (DefaultResponseEnterpriseDTO)
-		EnterpriseDTOFactory.getDTO(enterprise, TypeDTO.DEFAULT)).toList();
+		EnterpriseDTOFactory.createDTO(enterprise, TypeDTO.DEFAULT)).toList();
 	}
 	
 	public Optional<Enterprise> findById(Long id) {

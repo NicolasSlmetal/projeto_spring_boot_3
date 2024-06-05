@@ -16,6 +16,8 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import com.slgames.store.dtos.TypeDTO;
+import com.slgames.store.dtos.enterprise.CreatedResponseEnterpriseDTO;
+import com.slgames.store.dtos.users.CreatedResponseUserDTO;
 import com.slgames.store.dtos.users.DefaultResponseUserDTO;
 import com.slgames.store.dtos.users.InsertUserDTO;
 import com.slgames.store.dtos.users.UpdateUserDTO;
@@ -46,8 +48,7 @@ public class UserController {
 			@ApiResponse(responseCode = "200", description = "Show all users data stored.")
 	})
 	public ResponseEntity<List<DefaultResponseUserDTO>> findAll() {
-		return ResponseEntity.ok(getService().findAll().stream()
-				.map(user -> (DefaultResponseUserDTO) UserDTOFactory.createDTO(user, TypeDTO.DEFAULT)).toList());
+		return ResponseEntity.ok(getService().findAll());
 	}
 	
 	@GetMapping("/{id}")
@@ -56,13 +57,15 @@ public class UserController {
 			@ApiResponse(responseCode = "200", description = "Show the user data."),
 			@ApiResponse(responseCode = "404", description = "Not found.")
 	})
-	public ResponseEntity<?> findById(@PathVariable Long id){
-		Optional<User> optional = getService().findById(id);
-		if (optional.isPresent()) {
-			return ResponseEntity.ok(UserDTOFactory.createDTO(optional.get(), TypeDTO.DEFAULT));
-		} else {
-			return ResponseEntity.notFound().build();
-		}
+	
+	//Different of others controllers because we need to hide sensitive data as password
+	public ResponseEntity<DefaultResponseUserDTO> findById(@PathVariable Long id){
+		Optional<User> user = getService().findById(id);
+		if (user.isPresent()) return ResponseEntity.ok((DefaultResponseUserDTO) 
+				UserDTOFactory
+				.createDTO(user.get(), TypeDTO.DEFAULT));
+		else return ResponseEntity.notFound().build();
+	
 	}
 	
 	@PostMapping
@@ -74,10 +77,12 @@ public class UserController {
 					+ "\n - Empty email and/or password;"
 					+ "\n - Existing email is provided.")
 	})
-	public ResponseEntity<?> insertUser(@RequestBody @Valid InsertUserDTO dto, UriComponentsBuilder builder){
+	public ResponseEntity<CreatedResponseUserDTO> insertUser(@RequestBody @Valid InsertUserDTO dto, UriComponentsBuilder builder){
 		User user = getService().createUser(dto);
 		var uri = builder.path("/user/{id}").buildAndExpand(user.getId()).toUri();
-		return ResponseEntity.created(uri).body(UserDTOFactory.createDTO(user, TypeDTO.CREATED));
+		return ResponseEntity.created(uri).body(
+				(CreatedResponseUserDTO) UserDTOFactory.
+				createDTO(user, TypeDTO.CREATED));
 	}
 	
 	@PutMapping
@@ -89,10 +94,13 @@ public class UserController {
 			@ApiResponse(responseCode="404", description="The ID was not found in the database."),
 			@ApiResponse(responseCode="500", description="Could occur when email/nickname/password is updated with a existing value.")
 	})
-	public ResponseEntity<?> updateUser(@RequestBody UpdateUserDTO dto){
+	public ResponseEntity<DefaultResponseUserDTO> updateUser(@RequestBody UpdateUserDTO dto){
 		User user = getService().updateUser(dto);
 		if (user != null) {
-			return ResponseEntity.ok(UserDTOFactory.createDTO(user, TypeDTO.DEFAULT));
+			return ResponseEntity
+					.ok( (DefaultResponseUserDTO)
+							UserDTOFactory
+							.createDTO(user, TypeDTO.DEFAULT));
 		} else {
 			return ResponseEntity.notFound().build();
 		}

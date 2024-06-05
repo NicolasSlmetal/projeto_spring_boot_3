@@ -55,7 +55,7 @@ public class EnterpriseControllerUnitTest {
 	public void testFindAllReturnOK() throws Exception {
 		Enterprise enterprise = new Enterprise(1L, "Sample", LocalDate.of(1999, 1, 1));
 		List<DefaultResponseEnterpriseDTO> dtoList = List.of((DefaultResponseEnterpriseDTO) 
-				EnterpriseDTOFactory.getDTO(enterprise, TypeDTO.DEFAULT));
+				EnterpriseDTOFactory.createDTO(enterprise, TypeDTO.DEFAULT));
 		
 		when(service.findAll()).thenReturn(dtoList);
 		
