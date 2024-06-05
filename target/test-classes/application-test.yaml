@@ -1,8 +1,0 @@
-
-spring:
-  datasource:
-    url: jdbc:mysql://localhost:3308/sltest
-    username: root
-    password: root
-  flyway:
-    locations: classpath:db/migration/test
