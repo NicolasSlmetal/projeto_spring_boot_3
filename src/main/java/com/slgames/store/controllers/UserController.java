@@ -16,11 +16,11 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import com.slgames.store.dtos.TypeDTO;
-import com.slgames.store.dtos.enterprise.CreatedResponseEnterpriseDTO;
 import com.slgames.store.dtos.users.CreatedResponseUserDTO;
 import com.slgames.store.dtos.users.DefaultResponseUserDTO;
 import com.slgames.store.dtos.users.InsertUserDTO;
 import com.slgames.store.dtos.users.UpdateUserDTO;
+import com.slgames.store.dtos.users.UpdatedUserResponseDTO;
 import com.slgames.store.dtos.users.UserDTOFactory;
 import com.slgames.store.model.User;
 import com.slgames.store.model.services.UserService;
@@ -34,9 +34,9 @@ import jakarta.validation.Valid;
 import lombok.Getter;
 
 @RestController
-@RequestMapping("/user")
+@RequestMapping("/users")
 @Getter
-@Tag(name = "/user", description = "This is the endpoint to manipulate and acess users data.")
+@Tag(name = "/users", description = "This is the endpoint to manipulate and acess users data.")
 public class UserController {
 
 	@Autowired
@@ -75,7 +75,8 @@ public class UserController {
 			@ApiResponse(responseCode = "201", description="The user is created in the database"),
 			@ApiResponse(responseCode = "400", description="User data isn't allowed. Some reasons are: "
 					+ "\n - Empty email and/or password;"
-					+ "\n - Existing email is provided.")
+					+ "\n - Existing email is provided."), 
+			@ApiResponse(responseCode = "500", description="Could occur when token expired. The user need to access /login again.")
 	})
 	public ResponseEntity<CreatedResponseUserDTO> insertUser(@RequestBody @Valid InsertUserDTO dto, UriComponentsBuilder builder){
 		User user = getService().createUser(dto);
@@ -90,17 +91,21 @@ public class UserController {
 	@Operation(summary = "Update the data of a user.")
 	@ApiResponses(value = {
 			@ApiResponse(responseCode="200", description="The user data was updated."), 
-			@ApiResponse(responseCode="400", description="Could occur when Id is not provided."),
+			@ApiResponse(responseCode="400", description="Could occur:"
+					+ "\n - When Id is not provided;"
+					+ "\n - When the authenticated user tries to update a diferrent user."),
+			@ApiResponse(responseCode = "401", description = "The authenticated user is trying to update other user."),
+			@ApiResponse(responseCode="403", description="The token was not provided."),
 			@ApiResponse(responseCode="404", description="The ID was not found in the database."),
-			@ApiResponse(responseCode="500", description="Could occur when email/nickname/password is updated with a existing value.")
+			@ApiResponse(responseCode="500", description="Could occur:"
+					+ "\n - When email/nickname/password is updated with a existing value."
+					+ "\n - When the token expired. The user need to access /login again.")
 	})
-	public ResponseEntity<DefaultResponseUserDTO> updateUser(@RequestBody UpdateUserDTO dto){
+	public ResponseEntity<UpdatedUserResponseDTO> updateUser(@RequestBody UpdateUserDTO dto){
 		User user = getService().updateUser(dto);
 		if (user != null) {
 			return ResponseEntity
-					.ok( (DefaultResponseUserDTO)
-							UserDTOFactory
-							.createDTO(user, TypeDTO.DEFAULT));
+					.ok(service.refreshTokenToUpdatedUser(user));
 		} else {
 			return ResponseEntity.notFound().build();
 		}
@@ -111,7 +116,9 @@ public class UserController {
 	@Operation(summary = "Delete a user based on your Id.")
 	@ApiResponses(value = {
 			@ApiResponse(responseCode = "204", description = "The user was deleted sucessfuly."),
-			@ApiResponse(responseCode = "404", description = "The user doesn't exist.")
+			@ApiResponse(responseCode = "401", description = "The authenticated user is trying to delete other user."),
+			@ApiResponse(responseCode = "404", description = "The user doesn't exist."),
+			@ApiResponse(responseCode = "500", description = "Could occur when the token expired. The user need to access /login again.")
 	})
 	public ResponseEntity<?> deleteUser(@PathVariable Long id){
 		if (getService().deleteUser(id)) {
@@ -123,3 +130,4 @@ public class UserController {
 	
 	
 }
+	
