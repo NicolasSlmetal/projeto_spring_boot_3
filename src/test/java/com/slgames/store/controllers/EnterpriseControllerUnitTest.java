@@ -5,20 +5,24 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.context.annotation.Import;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
-import com.slgames.store.dtos.TypeDTO;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.slgames.store.dtos.enterprise.DefaultResponseEnterpriseDTO;
-import com.slgames.store.dtos.enterprise.EnterpriseDTOFactory;
 import com.slgames.store.dtos.enterprise.InsertEnterpriseDTO;
 import com.slgames.store.dtos.enterprise.UpdateEnterpriseDTO;
+import com.slgames.store.infra.SecurityConfigurationTest;
 import com.slgames.store.model.Enterprise;
 import com.slgames.store.model.services.EnterpriseService;
+import com.slgames.store.utils.TestObjects;
+
 import static io.restassured.module.mockmvc.RestAssuredMockMvc.standaloneSetup;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
@@ -27,50 +31,59 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
 @WebMvcTest(controllers = EnterpriseController.class)
+@AutoConfigureMockMvc(addFilters = false)
 @ActiveProfiles("test")
+@Import(SecurityConfigurationTest.class)
 public class EnterpriseControllerUnitTest {
 	
+	private static final String ENDPOINT = "/enterprises";
+
 	@Autowired
 	private EnterpriseController controller;
+	
+	@Autowired
+	private ObjectMapper mapper;
+	
+	@Autowired
+	private MockMvc mock;
 	
 	@MockBean
 	private EnterpriseService service;
 	
-	@Autowired
-	private MockMvc mock;
+	private TestObjects.EnterpriseTest enterpriseTest;
 	
 	
 	@BeforeEach
 	public void setUp() {
 		standaloneSetup(controller);
+		enterpriseTest = new TestObjects.EnterpriseTest();
 	}
 	
 	@Test
 	@DisplayName("Should find all enterprises and Return Ok")
 	public void testFindAllReturnOK() throws Exception {
-		Enterprise enterprise = new Enterprise(1L, "Sample", LocalDate.of(1999, 1, 1));
-		List<DefaultResponseEnterpriseDTO> dtoList = List.of((DefaultResponseEnterpriseDTO) 
-				EnterpriseDTOFactory.createDTO(enterprise, TypeDTO.DEFAULT));
+		Enterprise enterprise = enterpriseTest.createEnterprise();
+		List<DefaultResponseEnterpriseDTO> dtoList = List.of(new 
+				DefaultResponseEnterpriseDTO(enterprise));
 		
 		when(service.findAll()).thenReturn(dtoList);
 		
-		mock.perform(get("/enterprise")).andExpect(status().isOk());
+		mock.perform(get(ENDPOINT)).andExpect(status().isOk());
 	}
 	
 	@Test
 	@DisplayName("Should find a enterprise by ID and return OK")
 	public void testEnterpriseByID() throws Exception {
 		Long id = 1L;
-		Enterprise enterprise = new Enterprise(1L, "Sample", LocalDate.of(1999, 1, 1));
+		Enterprise enterprise = enterpriseTest.createEnterprise();
 		
 		when(service.findById(id)).thenReturn(Optional.of(enterprise));
 		
-		mock.perform(get("/enterprise/{id}", id)).andExpect(status().isOk());
+		mock.perform(get(ENDPOINT +"/{id}", id)).andExpect(status().isOk());
 	
 	}
 	
@@ -81,36 +94,36 @@ public class EnterpriseControllerUnitTest {
 		
 		when(service.findById(id)).thenReturn(Optional.empty());
 		
-		mock.perform(get("/enterprise/{id}", id)).andExpect(status().isNotFound());
+		mock.perform(get(ENDPOINT +"/{id}", id)).andExpect(status().isNotFound());
 	
 	}
 	
 	@Test
 	@DisplayName("Should return status code Created when insert a Enterprise")
 	public void testInsertEnterpriseReturnCreated() throws Exception {
-		InsertEnterpriseDTO dto = new InsertEnterpriseDTO("Sample", LocalDate.of(1999, 1, 1));
+		InsertEnterpriseDTO dto = (InsertEnterpriseDTO) enterpriseTest.createdDTO();
 		Enterprise enterprise = new Enterprise(dto);
 		enterprise.setId(1L);
 		when(service.createEnterprise(dto)).thenReturn(enterprise);
-		
-		var response = mock.perform(post("/enterprise")
+		String json = mapper.writeValueAsString(dto);
+		var response = mock.perform(post(ENDPOINT)
 				.contentType(MediaType.APPLICATION_JSON)
-				.content(dto.toString()))
+				.content(json))
 		.andExpect(status().isCreated()).andReturn();
 		String body = response.getResponse().getContentAsString();
-		
-		Assertions.assertTrue(body.contains("Sample"));
+		String expectedBody = mapper.writeValueAsString(enterpriseTest.expectedCreatedDTO());
+		Assertions.assertEquals(expectedBody, body);
 		
 	}
 	@Test
 	@DisplayName("Should return status code Bad Request when a existing Enterprise name is sent")
 	public void testInsertEnterpriseReturnBadRequestWhenAExistingEnterpriseNameIsSent() throws Exception {
-		InsertEnterpriseDTO dto = new InsertEnterpriseDTO("Sample", LocalDate.of(1999, 1, 1));
+		InsertEnterpriseDTO dto = (InsertEnterpriseDTO) enterpriseTest.createdDTO();
 		when(service.createEnterprise(dto)).thenThrow(new IllegalArgumentException(String.format("Enterprise name 'Sample' already exists")));
-		
-		mock.perform(post("/enterprise")
+		String json = mapper.writeValueAsString(dto);
+		mock.perform(post(ENDPOINT)
 				.contentType(MediaType.APPLICATION_JSON)
-				.content(dto.toString()))
+				.content(json))
 		.andExpect(status().isBadRequest()).andReturn();
 		
 	}
@@ -118,31 +131,32 @@ public class EnterpriseControllerUnitTest {
 	@Test
 	@DisplayName("Should return status code Ok when a valid Body is provided")
 	public void testUpdateEnterprise() throws Exception {
-		UpdateEnterpriseDTO dto = new UpdateEnterpriseDTO(1L, "Updated Sample", LocalDate.of(1999, 1, 1));
-		Enterprise enterprise = new Enterprise(1L, "Sample", LocalDate.of(1998, 1, 1));
+		UpdateEnterpriseDTO dto = (UpdateEnterpriseDTO) enterpriseTest.updatedDTO();
+		Enterprise enterprise = enterpriseTest.createEnterprise();
 		enterprise.update(dto);
 		
 		when(service.update(dto)).thenReturn(enterprise);
-		
-		var response = mock.perform(put("/enterprise")
+		String json = mapper.writeValueAsString(dto);
+		var response = mock.perform(put(ENDPOINT)
 				.contentType(MediaType.APPLICATION_JSON)
-				.content(dto.toString()))
+				.content(json))
 		.andExpect(status().isOk())
 		.andReturn();
 		String body = response.getResponse().getContentAsString();
-		Assertions.assertTrue(body.contains("Updated Sample"));
+		String expectedBody = mapper.writeValueAsString(enterpriseTest.expectedDTO(dto.name()));
+		Assertions.assertEquals(expectedBody, body);
 	}
 	
 	@Test
-	@DisplayName("Should return status code not found when a non existing ID is provided")
+	@DisplayName("Should return status code Not Found when a non existing ID is provided")
 	public void testUpdateEnterpriseReturnNotFoundWhenNonExistingIDIsProvided() throws Exception {
-		UpdateEnterpriseDTO dto = new UpdateEnterpriseDTO(-1L, "Updated Sample", LocalDate.of(1999, 1, 1));
+		UpdateEnterpriseDTO dto = (UpdateEnterpriseDTO) enterpriseTest.updatedDTOWithInvalidID();
 		
 		when(service.update(dto)).thenReturn(null);
-		
-		mock.perform(put("/enterprise")
+		String json = mapper.writeValueAsString(dto);
+		mock.perform(put(ENDPOINT)
 					.contentType(MediaType.APPLICATION_JSON)
-					.content(dto.toString()))
+					.content(json))
 			.andExpect(status().isNotFound());
 	}
 	
@@ -153,7 +167,7 @@ public class EnterpriseControllerUnitTest {
 		
 		when(service.delete(id)).thenReturn(true);
 		
-		mock.perform(delete("/enterprise/{id}", id))
+		mock.perform(delete(ENDPOINT +"/{id}", id))
 		.andExpect(status().isNoContent());
 	}
 	@Test
@@ -163,7 +177,7 @@ public class EnterpriseControllerUnitTest {
 		
 		when(service.delete(id)).thenReturn(false);
 		
-		mock.perform(delete("/enterprise/{id}", id))
+		mock.perform(delete(ENDPOINT +"/{id}", id))
 		.andExpect(status().isNotFound());
 	}
 	
@@ -174,7 +188,7 @@ public class EnterpriseControllerUnitTest {
 		
 		when(service.delete(id)).thenThrow(new DataIntegrityViolationException("Cannot delete enterprise because there are games referenced to it"));
 		
-		mock.perform(delete("/enterprise/{id}", id))
+		mock.perform(delete(ENDPOINT +"/{id}", id))
 		.andExpect(status().isInternalServerError());
 	}
 	
