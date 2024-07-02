@@ -1,5 +1,7 @@
 package com.slgames.store.model;
 
+import org.springframework.security.core.GrantedAuthority;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -19,8 +21,13 @@ import lombok.Setter;
 @NoArgsConstructor
 @Entity(name ="role")
 @Table(name = "roles")
-public class Role {
+public class Role implements GrantedAuthority{
 	
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 1L;
+
 	@Getter
 	public static enum RoleName{
 		DEFAULT("Default"),
@@ -48,5 +55,11 @@ public class Role {
 		else if (name.equals(RoleName.STAFF)) id = 2L;
 		else id = 1L;
 		setId(id);
+	}
+
+	@Override
+	public String getAuthority() {
+		// TODO Auto-generated method stub
+		return getRoleName().toString();
 	}
 }
