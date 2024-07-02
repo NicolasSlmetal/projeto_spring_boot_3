@@ -34,14 +34,14 @@ import jakarta.validation.Valid;
 import lombok.Getter;
 
 @RestController
-@RequestMapping("/game")
+@RequestMapping("/games")
 @Getter
-@Tag(name = "/game", description = "This is the endpoint to manipulate and acess games data.")
+@Tag(name = "/games", description = "This is the endpoint to manipulate and acess games data.")
 public class GameController {
-	
 	
 	@Autowired
 	private GameService service;
+	
 	@Operation(summary = "Return all games stored on the API, showing a Default DTO object of them.")
 	@ApiResponses(value = {
 			@ApiResponse(responseCode = "200", description = "Show all games data stored.")
@@ -72,7 +72,12 @@ public class GameController {
 					+ "\n- Publisher id doesn't exist;"
 					+ "\n- Price is negative;"
 					+ "\n - Some Genre is wrong;"
-					+ "\n - The date is in the future.")
+					+ "\n - The date is in the future;"
+					+ "\n - Token expired."),
+			@ApiResponse(responseCode = "403", description= "There are two possibilities when this code showed:"
+					+ "\n- The bearer token not was provided;"
+					+ "\n- Even when the token is provided, the user who attempt to call this endpoint method doesn't have authority."
+					+ "\nOBS: Staffs and ADMs can use this method." )
 	})
 	public ResponseEntity<CreatedResponseGameDTO> insertGame(@RequestBody @Valid InsertGameDTO gameDto, UriComponentsBuilder builder){
 			Game game = getService().createGame(gameDto);
@@ -88,8 +93,13 @@ public class GameController {
 	@Operation(summary = "Update the data of a game.")
 	@ApiResponses(value = {
 			@ApiResponse(responseCode="200", description="The game data was updated."), 
-			@ApiResponse(responseCode="400", description="Could occur when Id is not provided."),
-			@ApiResponse(responseCode="404", description="The ID was not found in the database.")
+			@ApiResponse(responseCode="400", description="Could occur when Id is not provided;"),
+			@ApiResponse(responseCode = "403", description= "There are two possibilities when this code showed:"
+					+ "\n- The bearer token not was provided;"
+					+ "\n- Even when the token is provided, the user who attempt to call this endpoint method doesn't have authority."
+					+ "\nOBS: Staffs and ADMs can use this method." ),
+			@ApiResponse(responseCode="404", description="The ID was not found in the database."),
+			@ApiResponse(responseCode="500", description="Could occur when token expired.")
 	})
 	public ResponseEntity<DefaultResponseGameDTO> updateGame(@RequestBody @Valid UpdateGameDTO gameDto){
 		Game game = getService().update(gameDto);
@@ -105,7 +115,13 @@ public class GameController {
 	@Operation(summary = "Delete a game based on your Id.")
 	@ApiResponses(value = {
 			@ApiResponse(responseCode = "204", description = "The game was deleted sucessfuly."),
-			@ApiResponse(responseCode = "404", description = "The game doesn't exist.")
+			@ApiResponse(responseCode = "400", description = "The token has expired."),
+			@ApiResponse(responseCode = "403", description= "There are two possibilities when this code showed:"
+					+ "\n- The bearer token not was provided;"
+					+ "\n- Even when the token is provided, the user who attempt to call this endpoint method doesn't have authority."
+					+ "\nOBS:Only ADMs can use this method." ),
+			@ApiResponse(responseCode = "404", description = "The game doesn't exist."),
+			@ApiResponse(responseCode = "500", description = "Could occur when token expired.")
 	})
 	public ResponseEntity<?> deleteGame(@PathVariable Long id){
 		if (getService().delete(id)) return ResponseEntity.noContent().build();
