@@ -5,6 +5,7 @@ import com.slgames.store.dtos.CreatedDTO;
 import com.slgames.store.dtos.DTO;
 import com.slgames.store.dtos.DefaultDTO;
 import com.slgames.store.dtos.TypeDTO;
+import com.slgames.store.infra.TokenService.TokenDTO;
 import com.slgames.store.model.User;
 
 
@@ -19,10 +20,11 @@ public class UserDTOFactory implements AbstractDTOFactory<User>{
 	
 	public static DTO createDTO(User user, TypeDTO type) {
 		switch (type) {
-			case TypeDTO.CREATED:
+			case CREATED:
 				return getInstance().fabricateCreated(user);
-			case TypeDTO.DEFAULT:
+			case DEFAULT:
 				return getInstance().fabricateDefault(user);
+			case UPDATED:
 			default:
 				return null;
 		}
@@ -35,6 +37,12 @@ public class UserDTOFactory implements AbstractDTOFactory<User>{
 	@Override
 	public DefaultDTO fabricateDefault(User object) {
 		return new DefaultResponseUserDTO(object);
+	}
+	
+	public UpdatedUserResponseDTO fabricateUpdatedUser(User user, TokenDTO tokenDto) {
+		return new UpdatedUserResponseDTO(user.getUsername(), 
+				tokenDto.token(), 
+				tokenDto.expiration());
 	}
 
 }
