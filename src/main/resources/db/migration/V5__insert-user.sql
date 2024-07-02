@@ -1,0 +1,1 @@
+INSERT INTO slgames.users (nickname, email, `password`, `role`) VALUES ("slader", "slader@gmail.com", "$2a$12$Zab6jK./Ydwjjy02Lf5UP.ImRUNJtbvlrVRLo0DU.llOj1SRDIJGi", 3);
